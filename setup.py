@@ -9,14 +9,14 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='tokenize',
+    name='revtok',
     version='0.0.1',
 
     description='Reversible tokenization in Python.',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/vzhong/tokenize',
+    url='https://github.com/jekbradbury/revtok',
 
     # Author details
     author='James Bradbury',
