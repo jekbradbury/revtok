@@ -62,7 +62,7 @@ setup(
     # for example:
     # $ pip install -e .[dev,test]
     extras_require={
-        'dev': ['check-manifest', 'sphinx', 'sphinx_rtd_theme'],
+        'dev': ['check-manifest'],
         'test': ['coverage'],
     },
 
