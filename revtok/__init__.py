@@ -1,1 +1,1 @@
-from tokenizer import tokenize, detokenize
+from .tokenizer import tokenize, detokenize
