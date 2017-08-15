@@ -1,7 +1,7 @@
 import unicodedata
 
 
-HALF = '\ue300' # private use character
+HALF = ' '
 
 
 def space_priority(char):
@@ -39,4 +39,5 @@ def tokenize(s):
     return toks
     
 def detokenize(l):
-    return ''.join(l).replace(HALF * 2, ' ').replace(HALF, '')
+    return ''.join(l).replace(
+        HALF * 2, '\ue301').replace(HALF, '').replace('\ue301', ' ')
