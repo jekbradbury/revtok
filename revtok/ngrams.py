@@ -1,6 +1,6 @@
 # coding=utf-8
 from tokenizer import tokenize
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 class keydefaultdict(defaultdict):
     def __missing__(self, key):
@@ -59,8 +59,46 @@ class NGrams:
         for utterance in utterances.values():
             self.from_utterance(utterance)
 
+def build_vocab(corpus, max_size):
+    vocab = Counter(''.join(corpus)).most_common()
+    vocab.sort(key=lambda tup: (-tup[1], tup[0]))
+    vocab = [tup[0] for tup in vocab]
+    ngrams = list(NGrams(corpus).ngrams.values())
+    key = lambda ngram: ngram.count * (ngram.n - 1)
+    for i in range(max_size - len(vocab)):
+        ngrams.sort(key=key, reverse=True)
+        best = ngrams[0]
+        #print(best)
+        for utterance in best.utterances:
+            seen = set([best])
+            for ngram in utterance.ngrams:
+                if ngram not in seen:
+                    ngram.count -= utterance.count * utterance.overlaps(ngram, best)
+                    seen.add(ngram)
+        vocab.append(ngrams[0].text)
+        ngrams = ngrams[1:]
+    return vocab
+
+def segment(utterance, vocab):
+    #print(utterance)
+    i, segments = 0, {0: []}
+    while True:
+        for j in range(i + 1, len(utterance) + 1):
+            if utterance[i:j] in vocab:
+                #print(i, j, segments)
+                curlen = len(segments[j]) if j in segments else len(utterance) + 1
+                if len(segments[i]) + 1 < curlen:
+                    segments[j] = segments[i] + [utterance[i:j]]
+        #print(i, segments)
+        inds = sorted(segments.keys())
+        if inds.index(i) < len(inds) - 1:
+            i = inds[inds.index(i) + 1]
+        else:
+            break
+    return segments[len(utterance)]
+
 #corpus = ['megabyte', 'gigabyte']
-corpus = tokenize("""
+train = tokenize("""
 In 1866, the S.S. General Sherman, an ironclad schooner recommissioned for use in the China trade after service for the Union as a blockade runner in the Civil War, came sailing across the Yellow Sea and entered the mouth of the Taedong River on the west coast of the Korean peninsula. What the ship’s commander, a Captain Preston, was after—trade or spying or pillage, or all three—remains a matter of speculation. Korea, a feudal kingdom ruled according to a strictly paternalistic Confucian code, was notoriously hostile to foreigners, and with reason. While a single dynasty had held the throne for five hundred years, the country—the size of North and South Carolina combined—had been incessantly squeezed and serially invaded by bigger, more powerful neighbors. Korea was the most racially homogeneous nation in Asia, and yearned to believe that it was self-sufficient. But, although its borders were sealed, it could not fend for itself, and Korea’s kings had submitted to Chinese suzerainty, paying regular tribute to China’s emperors in the Forbidden City, in exchange for being protected and otherwise left alone. To Western traders and missionaries, encouraged by the opening of Japan in 1854, Korea’s xenophobic reputation as the last “hermit kingdom” exerted an immense temptation. Tales circulated of unseen wonders: miniature horses, giant birds, and tombs of solid gold encasing cadavers littered with precious gems. Never mind that French Jesuits who had infiltrated Korea from China had never been heard from again. Captain Preston set out to be the first American to carry his flag into Korea, and, by all accounts, he was.
 As Preston and his crew (three Americans, an English missionary, and some twenty Chinese and Malay seamen) sailed up the Taedong, ignoring local demands to turn back, the Regent of Korea decreed that the invaders be driven out or killed. The battle was met not far from Pyongyang, now the capital of North Korea, where a war party had gathered on the riverbanks. The Sherman’s cannons were deadlier than the Koreans’ flaming arrows, and its armor was impervious to their heavier missiles, but the ship soon ran aground and would not come free. After four days of fighting, a Korean officer named Pak launched burning barges against its hull and set it aflame, forcing all aboard to throw themselves into the river, where they were captured by Korean fighters and either hacked to death at once or brought to shore for dismemberment by the jubilant crowds. Body parts were carried off as trophies, and Pak was acclaimed as a savior of the nation. In 1905, a Daily Mail correspondent, F. A. McKenzie, was shown the Sherman’s anchor chains hanging from the gates of Pyongyang, “as a warning to all men of the fate awaiting those who would dare to disturb the peace of the Land of the Morning Calm.”
 By McKenzie’s time, however, Korea had been cracked open to the outside world—initially by diplomacy, through defensive treaties with expansive Western powers, and then by force—and the warning of the rusty chains rang with Ozymandian self-delusion. America was the first non-Asian country to win the welcome of the Korean court. In a Treaty of Amity and Commerce, signed in 1882, Washington pledged its “good offices” if Korea was threatened from abroad, and the king was said to have danced with delight when an American diplomat was posted to Seoul. Yet twenty years later President Teddy Roosevelt stood by when tsarist Russia, looking south from its booming Pacific frontier at Vladivostok, saw warm-water ports and Chinese weakness in Korea and moved troops into the peninsula. The Russians were soon driven out by imperial Japan, whose subsequent domination of Korea was brokered by Roosevelt in a deal that ultimately won him a Nobel Peace Prize. In this way, buffeted by the same foreign powers that its destiny still depends on, the antique kingdom of Korea was dragged into the twentieth century as a subject nation. When liberation came, with the Japanese surrender in the Second World War, the Soviet Union occupied the North and America the South, and, in a hasty move that was meant to be temporary, the country was cut roughly in half at the waist, along the thirty-eighth parallel.
@@ -148,22 +186,15 @@ When he was fifteen, Yi heard from defectors that his father had been purged. He
 Then, in the mid-eighties, Yi received a letter from his father, who had spent thirty years in prison camps. He said he recognized at once that the “letter was written by force”—dictated “by some government official telling him what to say: convince your son not to write any pro-American stuff and so on”—and much later he was able to confirm this impression. The letter mentioned that his father had a second family in the North, another brood of five children. Yi had no way to reply, even if he had wanted to. He could only imagine the lives of his half brothers and half sisters, and in 1994 he published a novella called “An Appointment with My Brother.” Writing in the first person, Yi describes a journey to China’s northeast, where the narrator of the story goes to meet his father. The Korean-Chinese intermediary he has hired to enter North Korea returns with the news that his father has died, and offers instead to produce one of his sons.
 They meet in the morning, at the narrator’s hotel, with an instant shock of familial recognition, and at first their encounter is charged with “the inborn antagonism that exists between half-brothers.” Each seeks to assert his primacy in his father’s affections, and also his self-sufficiency as an adult. A current of North-South friction runs through the barbs. The narrator boasts about his wealth, and his brother expresses disdain for it as evidence of dependency on America. Both men revert to caricatures of their positions, exaggerating their personal and social credentials. Although the sparring soon fades, the stiffness persists when they head off to the banks of the Tumen River to face North Korea and perform the traditional Confucian commemorative rites for their father. By the time they part, they do so amicably, but the narrator drinks heavily into the evening, and shortly after he returns to his hotel room, his brother, also drunk, knocks on the door and asks to come in.
 “How I hated you and envied you,” he says, and he recalls how his family was restricted at every step, barred from advancement, denied admission to the better schools, held back in the Army. “It was because of the blood relations Father had in the South,” he says, adding, “You and your family were to us not so much human beings as an invisible curse.” The narrator is stunned: “It was such a curious reversal. What I stood for to my brother was exactly what my father stood for to me in the days of my unfortunate youth.” His brother goes on, reciting the hardships of life in the North, and telling of their father’s agony on his deathbed because there was no money left to buy painkillers. The narrator muses, “My dear brother, please stop. You have to live under that system for some time yet. If you can’t get shoes that fit you, you have to make your feet fit your shoes. Of course it’s best to find shoes that fit your feet, but that is not always possible for everyone. The shoe shops of history are always run by unskilled shoemakers.”
+""")
+test = tokenize("""
 There is no moral to Yi’s story, only the awareness that this is what Korea has come to: half brothers, living in their respective half countries, who have inherited a situation that neither one wants and that weakens them both, and binds them by keeping them apart.
 “It’s a situation that has to be improved,” Yi said. But it worried him that the South was laying itself open, while the North remained a clenched fist. “It’s like the old fight between the sun and the wind—there’s a Korean tale about which one can make the wanderer take off his clothes.” Yi’s “Korean tale” was Aesop’s fable. “The sun does it by trying to heat him up, and the wind does it by trying to blow the clothes off. Of course, if the sun is going to win, the traveller mustn’t know that that’s the sun’s purpose. The traveller must simply take off his clothes. But in South Korea we have told them, Now we’re going to shine our light on you guys and be nice to you in order to make you open to us. They’re not going to open up. They’re going to take advantage of whatever you offer them, and that’s it. What I’m concerned about is that they’re not the ones who are taking off their clothes—we’re the ones who are taking off our clothes.”
 """)
-ngrams = list(NGrams(corpus).ngrams.values())
-key = lambda ngram: ngram.count * (ngram.n - 1)
-for i in range(100):
-    ngrams.sort(key=key, reverse=True)
-    best = ngrams[0]
-    print(best)
-    for utterance in best.utterances:
-        seen = set([best])
-        for ngram in utterance.ngrams:
-            if ngram not in seen:
-                ngram.count -= utterance.count * utterance.overlaps(ngram, best)
-                seen.add(ngram)
-    ngrams = ngrams[1:]
+vocab = build_vocab(train, 2000)
+print(vocab)
+segments = [segment(tok, vocab) for tok in test]
+print(segments)
 
 # ngrams = sorted(ngrams.ngrams.values(), key=lambda ngram: ngram.count * ngram.n)
 # print([ngram.text for ngram in ngrams])

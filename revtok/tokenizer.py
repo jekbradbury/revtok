@@ -7,6 +7,7 @@ HALF = ' '
 def space_priority(char):
     return {'L': 6, 'M': 6, 'N': 4, 'S': 2, 'P': 0,
             'Z': 0, 'C': 0}[unicodedata.category(char)[0]]
+    # TODO FIXME zeros should still create breaks between themselves
 
 
 def tokenize(s):
@@ -37,7 +38,7 @@ def tokenize(s):
     if current_cat > 0:
         toks[-1] += HALF
     return toks
-    
+
 def detokenize(l):
     return ''.join(l).replace(
         HALF * 2, '\ue301').replace(HALF, '').replace('\ue301', ' ')
