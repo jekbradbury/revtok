@@ -2,15 +2,15 @@ import unicodedata
 
 
 HALF = ' '
+CAP = '^'
 
 
 def space_priority(char):
-    return {'L': 6, 'M': 6, 'N': 4, 'S': 2, 'P': 0,
-            'Z': 0, 'C': 0}[unicodedata.category(char)[0]]
-    # TODO FIXME zeros should still create breaks between themselves
+    return {'L': 7, 'M': 7, 'N': 5, 'S': 3, 'P': 1,
+            'Z': -1, 'C': -3}[unicodedata.category(char)[0]]
 
 
-def tokenize(s):
+def tokenize(s, decap=True):
     """Simple reversible tokenizer"""
 
     toks = ['']
@@ -21,11 +21,13 @@ def tokenize(s):
             toks[-1] += HALF
             toks.append(HALF)
             current_cat = None
-        elif current_cat is None or cat == current_cat:
+        elif current_cat is None:
             toks[-1] += c
             current_cat = cat
+        elif cat == current_cat:
+            toks[-1] += c # HALF + c
         else:
-            if cat + current_cat == 0:
+            if cat <= 0 and current_cat <= 0:
                 toks.append(c)
             elif cat < current_cat:
                 toks[-1] += HALF
@@ -37,7 +39,18 @@ def tokenize(s):
         toks = toks[1:]
     if current_cat > 0:
         toks[-1] += HALF
+    if decap:
+        toks = list(map(decapitalize, toks))
     return toks
+
+
+def decapitalize(tok):
+    if tok == tok.lower():
+        return tok
+    pre, tok = (HALF, tok[1:]) if tok[0] == HALF else ('', tok)
+    if tok == tok.capitalize():
+        return CAP + pre + tok[0].lower() + tok[1:]
+    return pre + tok
 
 def detokenize(l):
     return ''.join(l).replace(
