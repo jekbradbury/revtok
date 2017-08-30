@@ -1,5 +1,5 @@
 # coding=utf-8
-from tokenizer import tokenize
+from .tokenizer import tokenize
 from collections import defaultdict, Counter
 from operator import attrgetter
 
