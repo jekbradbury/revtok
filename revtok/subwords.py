@@ -53,29 +53,27 @@ class NGram:
         return "'{0}': {1}".format(self.text, self.count)
 
 class NGrams:
-    def __init__(self, corpus=None):
+    def __init__(self, counter):
         self.ngrams = keydefaultdict(NGram)
-        if corpus is not None:
-            self.from_corpus(corpus)
+        utterances = keydefaultdict(Utterance)
+        for text, count in counter.items():
+            utterances[text].count = count
+        for utterance in tqdm(utterances.values(), 'enumerating ngrams'):
+            self.from_utterance(utterance)
     def from_utterance(self, utterance):
         N = len(utterance.text)
         for i in range(N - 1):
             for n in range(2, N + 1 - i):
                 self.ngrams[utterance.text[i:i+n]].add(utterance, i)
-    def from_corpus(self, corpus):
-        utterances = keydefaultdict(Utterance)
-        for text in tqdm(corpus, 'deduplicating words'):
-            utterances[text].count += 1
-        for utterance in tqdm(utterances.values(), 'enumerating ngrams'):
-            self.from_utterance(utterance)
 
 class SubwordSegmenter:
     # TODO MAYBE allow segmentations like " aware " + "ness "
-    def __init__(self, corpus, max_size):
-        self.vocab = Counter(''.join(corpus)).most_common()
+    def __init__(self, counter, max_size):
+        self.vocab = Counter(''.join(counter.keys())).most_common()
         self.vocab.sort(key=lambda tup: (-tup[1], tup[0]))
         self.vocab = [tup[0] for tup in self.vocab]
-        ngrams = list(NGrams(corpus).ngrams.values())
+        ngrams = list(NGrams(counter).ngrams.values())
+        ngrams.sort(key=attrgetter('text'))
         key = attrgetter('entropy')
         for i in tqdm(range(max_size - len(vocab)), 'building vocab'):
             ngrams.sort(key=key, reverse=True)
@@ -110,8 +108,8 @@ class SubwordSegmenter:
 
 class SubwordTokenizer:
     def __init__(self, text, max_size):
-        corpus = tokenize(text)
-        self.segmenter = SubwordSegmenter(corpus, max_size)
+        corpus = tokenize(text, decap=True)
+        self.segmenter = SubwordSegmenter(Counter(corpus), max_size)
     def __call__(self, text):
         segments = map(self.segmenter, tokenize(text))
         return [tok for word in segments for tok in word]

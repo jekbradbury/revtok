@@ -1,8 +1,9 @@
+import re
 import unicodedata
 
 
 HALF = ' '
-CAP = '^'
+CAP = '\ue302'
 
 
 def space_priority(char):
@@ -10,7 +11,7 @@ def space_priority(char):
             'Z': -1, 'C': -3}[unicodedata.category(char)[0]]
 
 
-def tokenize(s, decap=True):
+def tokenize(s, decap=False):
     """Simple reversible tokenizer"""
 
     toks = ['']
@@ -37,7 +38,7 @@ def tokenize(s, decap=True):
             current_cat = cat
     if toks[0] == '':
         toks = toks[1:]
-    if current_cat > 0:
+    if current_cat is not None and current_cat > 0:
         toks[-1] += HALF
     if decap:
         toks = list(map(decapitalize, toks))
@@ -53,5 +54,6 @@ def decapitalize(tok):
     return pre + tok
 
 def detokenize(l):
-    return ''.join(l).replace(
-        HALF * 2, '\ue301').replace(HALF, '').replace('\ue301', ' ')
+    text = ''.join(l).replace(CAP + HALF, HALF + CAP)
+    text = re.sub(HALF + '+', lambda s: ' ' * (len(s.group(0)) // 2), text)
+    return re.sub(CAP + '.', lambda s: s.group(0)[-1].upper(), text, flags=re.S)
