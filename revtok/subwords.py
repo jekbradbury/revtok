@@ -1,5 +1,6 @@
 # coding=utf-8
 from .tokenizer import tokenize
+
 from collections import defaultdict, Counter
 from operator import attrgetter
 
@@ -71,11 +72,11 @@ class SubwordSegmenter:
     def __init__(self, counter, max_size):
         self.vocab = Counter(''.join(counter.keys())).most_common()
         self.vocab.sort(key=lambda tup: (-tup[1], tup[0]))
-        self.vocab = [tup[0] for tup in self.vocab]
+        self.vocab = dict(self.vocab)
         ngrams = list(NGrams(counter).ngrams.values())
         ngrams.sort(key=attrgetter('text'))
         key = attrgetter('entropy')
-        for i in tqdm(range(max_size - len(vocab)), 'building vocab'):
+        for i in tqdm(range(max_size - len(self.vocab)), 'building vocab'):
             ngrams.sort(key=key, reverse=True)
             best = ngrams[0]
             #print(best)
@@ -85,7 +86,7 @@ class SubwordSegmenter:
                     if ngram not in seen:
                         ngram.count -= utterance.count * utterance.overlaps(ngram, best)
                         seen.add(ngram)
-            self.vocab.append(ngrams[0].text)
+            self.vocab[ngrams[0].text] = ngrams[0].entropy
             ngrams = ngrams[1:]
 
     def __call__(self, utterance):
@@ -93,7 +94,7 @@ class SubwordSegmenter:
         i, segments = 0, {0: []}
         while True:
             for j in range(i + 1, len(utterance) + 1):
-                if utterance[i:j] in vocab:
+                if utterance[i:j] in self.vocab:
                     #print(i, j, segments)
                     curlen = len(segments[j]) if j in segments else len(utterance) + 1
                     if len(segments[i]) + 1 < curlen:
