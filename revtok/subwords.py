@@ -91,6 +91,8 @@ class SubwordSegmenter:
 
     def __call__(self, utterance):
         #print(utterance)
+        if utterance in self.vocab:
+            return [utterance]
         i, segments = 0, {0: []}
         while True:
             for j in range(i + 1, len(utterance) + 1):
