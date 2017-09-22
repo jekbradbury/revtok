@@ -69,7 +69,20 @@ class NGrams:
 
 class SubwordSegmenter:
     # TODO MAYBE allow segmentations like " aware " + "ness "
-    def __init__(self, counter, max_size):
+    def __init__(self, counter, max_size, force_python=False):
+        if not force_python:
+            try:
+                import julia
+                self.julia = julia.Julia()
+                self.julia.using("Revtok")
+                self.vocab = self.julia.buildvocab(counter, max_size)
+                return
+            except ImportError:
+                print('For faster subwords, please install Julia 0.6, pyjulia, '
+                      'and Revtok.jl. Falling back to Python implementation...')
+            except:
+                print('for faster subwords, please install Revtok.jl.'
+                      'Falling back to Python implementation...')
         self.vocab = Counter(''.join(counter.keys())).most_common()
         self.vocab.sort(key=lambda tup: (-tup[1], tup[0]))
         self.vocab = dict(self.vocab)
@@ -88,9 +101,11 @@ class SubwordSegmenter:
                         seen.add(ngram)
             self.vocab[ngrams[0].text] = ngrams[0].entropy
             ngrams = ngrams[1:]
+        self.julia = None
 
-    def __call__(self, utterance):
-        #print(utterance)
+    def __call__(self, utterance, force_python=False):
+        if self.julia is not None and not force_python:
+            return self.julia.segment(utterance, self.vocab)
         if utterance in self.vocab:
             return [utterance]
         i, segments = 0, {0: []}
