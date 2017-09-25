@@ -81,8 +81,9 @@ class SubwordSegmenter:
             except ImportError:
                 print('For faster subwords, please install Julia 0.6, pyjulia, '
                       'and Revtok.jl. Falling back to Python implementation...')
-            except:
-                print('for faster subwords, please install Revtok.jl.'
+            except Exception as e:
+                print(e)
+                print('for faster subwords, please install Revtok.jl. '
                       'Falling back to Python implementation...')
         self.vocab = Counter(''.join(counter.keys())).most_common()
         self.vocab.sort(key=lambda tup: (-tup[1], tup[0]))
@@ -116,11 +117,12 @@ class SubwordSegmenter:
         i, segments = 0, {0: []}
         while True:
             for j in range(i + 1, len(utterance) + 1):
-                if utterance[i:j] in self.vocab:
+                potential_segment = utterance[i:j]
+                if len(potential_segment) == 1 or potential_segment in self.vocab:
                     #print(i, j, segments)
                     curlen = len(segments[j]) if j in segments else len(utterance) + 1
                     if len(segments[i]) + 1 < curlen:
-                        segments[j] = segments[i] + [utterance[i:j]]
+                        segments[j] = segments[i] + [potential_segment]
             #print(i, segments)
             inds = sorted(segments.keys())
             if inds.index(i) < len(inds) - 1:
