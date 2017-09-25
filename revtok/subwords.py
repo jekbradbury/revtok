@@ -70,6 +70,7 @@ class NGrams:
 class SubwordSegmenter:
     # TODO MAYBE allow segmentations like " aware " + "ness "
     def __init__(self, counter, max_size, force_python=False):
+        self.cache = dict()
         if not force_python:
             try:
                 import julia
@@ -89,7 +90,7 @@ class SubwordSegmenter:
         ngrams = list(NGrams(counter).ngrams.values())
         ngrams.sort(key=attrgetter('text'))
         key = attrgetter('entropy')
-        for i in tqdm(range(max_size - len(self.vocab)), 'building vocab'):
+        for i in tqdm(range(max_size - len(self.vocab)), 'building subword vocab'):
             ngrams.sort(key=key, reverse=True)
             best = ngrams[0]
             #print(best)
@@ -103,11 +104,15 @@ class SubwordSegmenter:
             ngrams = ngrams[1:]
         self.julia = None
 
-    def __call__(self, utterance, force_python=False):
-        if self.julia is not None and not force_python:
+    def __call__(self, utterance, use_julia=False):
+        if self.julia is not None and use_julia:
             return self.julia.segment(utterance, self.vocab)
+        if isinstance(utterance, list):
+            return [tok for u in utterance for tok in self(u)]
         if utterance in self.vocab:
             return [utterance]
+        if utterance in self.cache:
+            return self.cache[utterance]
         i, segments = 0, {0: []}
         while True:
             for j in range(i + 1, len(utterance) + 1):
@@ -122,7 +127,9 @@ class SubwordSegmenter:
                 i = inds[inds.index(i) + 1]
             else:
                 break
-        return segments[len(utterance)]
+        ret = segments[len(utterance)]
+        self.cache[utterance] = ret
+        return ret
 
 class SubwordTokenizer:
     def __init__(self, text, max_size):
