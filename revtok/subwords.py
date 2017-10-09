@@ -39,6 +39,7 @@ class NGram:
         self.text = text
         self.utterances = defaultdict(set)
         self._count = 0
+        self.entropy = 0
     @property
     def count(self):
         return self._count
