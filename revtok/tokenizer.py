@@ -25,10 +25,11 @@ def tokenize(s, decap=False):
         elif current_cat is None:
             toks[-1] += c
             current_cat = cat
-        elif min(cat, current_cat) < 0:
-            toks.append(c)
         elif cat == current_cat:
-            toks[-1] += c # HALF + c
+            if current_cat < 0:
+                toks.append(c)
+            else:
+                toks[-1] += c # HALF + c
         elif cat < current_cat:
             toks[-1] += HALF
             toks.append(c)
