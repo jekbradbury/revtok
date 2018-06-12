@@ -22,9 +22,9 @@ def tokenize(s, decap=False):
             toks[-1] += HALF
             toks.append(HALF)
             current_cat = None
+            continue
         elif current_cat is None:
             toks[-1] += c
-            current_cat = cat
         elif cat == current_cat:
             if current_cat < 0:
                 toks.append(c)
