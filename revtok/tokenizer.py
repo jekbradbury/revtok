@@ -25,12 +25,9 @@ def tokenize(s, decap=False):
             continue
         elif current_cat is None:
             toks[-1] += c
-        elif cat == current_cat:
-            if current_cat < 2:
-                toks.append(c)
-            else:
-                toks[-1] += c # HALF + c
-        elif cat < current_cat:
+        elif cat == current_cat and cat > 2:
+            toks[-1] += c # HALF + c
+        elif cat <= current_cat:
             toks[-1] += HALF
             toks.append(c)
         else:
