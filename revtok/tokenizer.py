@@ -11,7 +11,7 @@ def space_priority(char):
             'Z': -1, 'C': -3}[unicodedata.category(char)[0]]
 
 
-def tokenize(s, decap=False):
+def tokenize(s, decap=False, split_punctuation=True):
     """Simple reversible tokenizer"""
 
     toks = ['']
@@ -25,8 +25,10 @@ def tokenize(s, decap=False):
             continue
         elif current_cat is None:
             toks[-1] += c
-        elif cat == current_cat and cat > 2:
+        elif cat == current_cat and (cat > 2 or not split_punctuation):
             toks[-1] += c # HALF + c
+        elif cat <= 0 and current_cat <= 0:
+            toks.append(c)
         elif cat <= current_cat:
             toks[-1] += HALF
             toks.append(c)
