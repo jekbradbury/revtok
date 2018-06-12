@@ -46,9 +46,11 @@ def tokenize(s, decap=False):
 
 
 def decapitalize(tok):
-    if len(tok) == 0 or tok[0] == tok[0].lower():
+    if len(tok) == 0:
         return tok
     pre, tok = (HALF, tok[1:]) if tok[0] == HALF else ('', tok)
+    if tok[0] == tok[0].lower():
+        return pre + tok
     if tok[0] == tok[0].upper() and (len(tok) == 1 or tok[1] != tok[1].upper()):
         return CAP + pre + tok[0].lower() + tok[1:]
     return pre + tok
