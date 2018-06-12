@@ -7,8 +7,8 @@ CAP = '\ue302'
 
 
 def space_priority(char):
-    return {'L': 7, 'M': 7, 'N': 5, 'S': 3, 'P': 1,
-            'Z': -1, 'C': -3}[unicodedata.category(char)[0]]
+    return {'L': 7, 'M': 7, 'N': 5, 'S': 3, 'P': -1,
+            'Z': -2, 'C': -3}[unicodedata.category(char)[0]]
 
 
 def tokenize(s, decap=False):
