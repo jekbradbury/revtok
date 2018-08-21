@@ -1,4 +1,5 @@
 import re
+import sys
 import unicodedata
 
 
@@ -41,7 +42,7 @@ def tokenize(s, decap=False, split_punctuation=True):
         toks[-1] += HALF
     if decap:
         toks = list(map(decapitalize, toks))
-    return toks
+    return [sys.intern(tok) for tok in toks]
 
 
 def decapitalize(tok):
