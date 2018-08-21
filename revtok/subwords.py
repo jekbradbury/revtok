@@ -3,6 +3,7 @@ from .tokenizer import tokenize
 
 from collections import defaultdict, Counter
 from operator import attrgetter
+import sys
 
 from tqdm import tqdm
 
@@ -131,6 +132,7 @@ class SubwordSegmenter:
             else:
                 break
         ret = segments[len(utterance)]
+        ret = [sys.intern(seg) for seg in ret]
         self.cache[utterance] = ret
         return ret
 
